@@ -45,5 +45,13 @@ const sqlite3 = require('sqlite3').verbose();
          });
        });
      }
+     
+     static delete(id) {
+       return new Promise((resolve, reject) => {
+         dbInstance.run(`DELETE FROM incidents WHERE id = ?`, [id], function(err) {
+           err ? reject(err) : resolve({ deleted: true });
+         });
+       });
+     }
    }
    module.exports = { IncidentRepository };

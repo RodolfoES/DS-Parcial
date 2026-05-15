@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InciTrack | Gestión Municipal</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #e74c3c;
+            --bg: #ecf0f1;
+            --card-bg: #ffffff;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg); color: #333; display: flex; min-height: 100vh; }
+        
+        /* Layout de dos columnas */
+        .sidebar { width: 350px; background-color: var(--card-bg); padding: 30px; box-shadow: 2px 0 10px rgba(0,0,0,0.1); height: 100vh; position: sticky; top: 0; }
+        .main-content { flex: 1; padding: 40px; overflow-y: auto; }
+
+        h2 { margin-bottom: 20px; color: var(--primary); font-size: 1.5rem; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        
+        /* Estilos del formulario */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; color: #555; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; background-color: #f9f9f9; }
+        button.btn-submit { width: 100%; padding: 12px; background-color: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; margin-top: 10px; }
+        button.btn-submit:hover { background-color: #1a252f; }
+
+        /* Estilos de las tarjetas de incidencias (Grid) */
+        .grid-incidencias { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .card-incidencia { background: var(--card-bg); border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e0e0e0; display: flex; flex-direction: column; }
+        .card-img { width: 100%; height: 200px; object-fit: cover; background-color: #ddd; }
+        .card-body { padding: 15px; flex: 1; display: flex; flex-direction: column; justify-content: space-between;}
+        .tag { display: inline-block; padding: 4px 8px; background-color: #3498db; color: white; border-radius: 4px; font-size: 0.8rem; margin-bottom: 10px; }
+        
+        /* Botón de borrar */
+        .btn-delete { background-color: var(--secondary); color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; margin-top: 15px; transition: 0.3s; }
+        .btn-delete:hover { background-color: #c0392b; }
+    </style>
+</head>
+<body>
+
+    <!-- Columna Izquierda: Formulario -->
+    <div class="sidebar">
+        <h2> Nuevo Registro</h2>
+        <form id="formularioIncidencia">
+            <div class="form-group">
+                <label>Título del problema</label>
+                <input type="text" name="title" placeholder="Ej. Pista rota" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Categoría</label>
+                <select name="category" required>
+                    <option value="">Seleccione...</option>
+                    <option value="Bache">Bache en Vía</option>
+                    <option value="Alumbrado">Falla de Alumbrado</option>
+                    <option value="Basura">Acumulación de Basura</option>
+                    <option value="Seguridad">Seguridad Pública</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Descripción detallada</label>
+                <input type="text" name="description" placeholder="Ubicación y detalles" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Evidencia (Foto/Video)</label>
+                <input type="file" name="file" accept="image/*,video/*" required>
+            </div>
+
+            <button type="submit" class="btn-submit">Guardar Incidencia</button>
+        </form>
+    </div>
+
+    <!-- Columna Derecha: Registros -->
+    <div class="main-content">
+        <h2> Monitor de Incidencias en la Vía Pública</h2>
+        <div id="listaIncidencias" class="grid-incidencias">
+            <!-- Las tarjetas se generan aquí desde JS -->
+            <p>Cargando información del servidor...</p>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+
+        // 1. Guardar datos
+        document.getElementById('formularioIncidencia').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            try {
+                const response = await fetch(`${API_URL}/api/incidents`, { method: 'POST', body: formData });
+                if (response.ok) {
+                    e.target.reset();
+                    cargarIncidencias();
+                }
+            } catch (error) {
+                alert('Error al conectar con el servidor.');
+            }
+        });
+
+        // 2. Obtener datos y mostrar imágenes
+        async function cargarIncidencias() {
+            try {
+                const response = await fetch(`${API_URL}/api/incidents`);
+                const result = await response.json();
+                const contenedor = document.getElementById('listaIncidencias');
+                
+                if (result.data.length === 0) {
+                    contenedor.innerHTML = '<p style="color:#7f8c8d;">No hay incidencias reportadas en el sistema.</p>';
+                    return;
+                }
+
+                contenedor.innerHTML = ''; 
+                result.data.forEach(inc => {
+                    // Verificamos si es un video o imagen basándonos en la extensión
+                    const isVideo = inc.media_url.match(/\.(mp4|webm|ogg)$/i);
+                    const mediaElement = isVideo 
+                        ? `<video class="card-img" src="${API_URL}${inc.media_url}" controls></video>`
+                        : `<img class="card-img" src="${API_URL}${inc.media_url}" alt="Evidencia">`;
+
+                    contenedor.innerHTML += `
+                        <div class="card-incidencia">
+                            ${mediaElement}
+                            <div class="card-body">
+                                <div>
+                                    <span class="tag">${inc.category}</span>
+                                    <h3 style="margin-bottom: 5px;">${inc.title}</h3>
+                                    <p style="font-size: 0.9rem; color: #555;">${inc.description}</p>
+                                </div>
+                                <button class="btn-delete" onclick="borrarIncidencia(${inc.id})"> Eliminar Registro</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (error) {
+                console.error('Error cargando los datos');
+            }
+        }
+
+        // 3. Borrar registro
+        async function borrarIncidencia(id) {
+            if(confirm("¿Estás seguro de eliminar esta incidencia?")) {
+                try {
+                    const response = await fetch(`${API_URL}/api/incidents/${id}`, { method: 'DELETE' });
+                    if(response.ok) {
+                        cargarIncidencias(); // Recargar la cuadrícula
+                    }
+                } catch (error) {
+                    alert("Error al intentar borrar");
+                }
+            }
+        }
+
+        // Cargar al inicio
+        cargarIncidencias();
+    </script>
+</body>
+</html>

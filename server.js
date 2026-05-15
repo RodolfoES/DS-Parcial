@@ -6,12 +6,24 @@ const fastify = require('fastify')({ logger: true });
    const pipeline = util.promisify(require('stream').pipeline);
    const { IncidentRepository } = require('./database');
 
+   // Habilitar CORS y Multipart
+   fastify.register(require('@fastify/cors'), { 
+     origin: '*',
+     methods: ['GET', 'POST', 'PATCH', 'DELETE']
+   });
    fastify.register(fastifyMultipart);
 
+   // Crear carpeta uploads si no existe
    const UPLOADS_DIR = path.join(__dirname, 'uploads');
    if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR);
 
-   // HU-01: Crear reporte con imagen
+   // Habilitar la visualización de imágenes (NUEVO)
+   fastify.register(require('@fastify/static'), {
+     root: UPLOADS_DIR,
+     prefix: '/uploads/', 
+   });
+
+   // Crear reporte
    fastify.post('/api/incidents', async (req, reply) => {
      const parts = req.parts();
      let title, category, description, mediaUrl;
@@ -31,16 +43,22 @@ const fastify = require('fastify')({ logger: true });
      reply.code(201).send({ message: 'OK', data: newIncident });
    });
 
-   // HU-02: Ver reportes
+   // Ver reportes
    fastify.get('/api/incidents', async (req, reply) => {
      const incidents = await IncidentRepository.getAll();
      reply.send({ data: incidents });
    });
 
-   // HU-03: Actualizar estado
+   // Actualizar estado
    fastify.patch('/api/incidents/:id/status', async (req, reply) => {
      await IncidentRepository.updateStatus(req.params.id, req.body.status);
      reply.send({ message: 'Estado actualizado' });
+   });
+
+   // Borrar reporte (NUEVO)
+   fastify.delete('/api/incidents/:id', async (req, reply) => {
+     await IncidentRepository.delete(req.params.id);
+     reply.send({ message: 'Incidencia eliminada' });
    });
 
    fastify.listen({ port: 3000 }, (err) => {
