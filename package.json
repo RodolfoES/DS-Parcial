@@ -1,0 +1,18 @@
+{
+  "name": "parcialdesarrollo",
+  "version": "1.0.0",
+  "description": "1. Especificación de Requisitos de Software (SRS) y Arquitectura \r Nombre del Proyecto: InciTrack (registro de incidencias en la via publica)  \r a) REQUISITOS :",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@fastify/multipart": "^10.0.0",
+    "fastify": "^5.8.5",
+    "sqlite3": "^6.0.1"
+  }
+}
